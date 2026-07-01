@@ -40,6 +40,12 @@ body {
   color: var(--color-ink);
 }
 
+/* Toast / checkpoint entrance */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar       { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
