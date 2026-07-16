@@ -20,6 +20,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [toast, setToast] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -53,7 +54,8 @@ export default function ProfilePage() {
         areaIds,
       });
       setSaved(true);
-      setTimeout(() => router.push('/dashboard'), 700);
+      setToast(true);
+      setTimeout(() => router.push('/dashboard'), 1400);
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
@@ -117,9 +119,16 @@ export default function ProfilePage() {
         {error && <p className="text-sm text-danger">{error}</p>}
 
         <Button type="submit" size="lg" loading={saving} className="w-full">
-          {saved ? <><Check size={16} /> Saved</> : 'Save profile'}
+          {saved ? <><Check size={16} /> Submitted</> : 'Submit'}
         </Button>
       </form>
+
+      {/* submit toast */}
+      {toast && (
+        <div className="fixed left-1/2 top-20 z-[60] flex -translate-x-1/2 items-center gap-2 rounded-full bg-forest-deep px-5 py-3 text-sm font-medium text-white shadow-xl animate-[fadeIn_.2s_ease]">
+          <Check size={16} className="text-mint" /> Business profile submitted
+        </div>
+      )}
     </div>
   );
 }

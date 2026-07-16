@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, Gift, Trophy, Sparkles, Lock } from 'lucide-react';
+import { ArrowLeft, Check, Gift, Trophy, Sparkles, Lock, ChevronDown } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api, apiErrorMessage } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
@@ -47,6 +47,15 @@ export default function PricingPage() {
   const [grand, setGrand] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  function toggleCat(catId: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      next.has(catId) ? next.delete(catId) : next.add(catId);
+      return next;
+    });
+  }
   const celebrated = useRef<Set<number>>(new Set());
 
   function goBack() {
@@ -203,11 +212,25 @@ export default function PricingPage() {
       </div>
 
       <div className="mt-6 flex flex-col gap-5">
-        {categories.map((cat) => (
-          <Card key={cat.id}>
-            <p className="font-semibold text-ink">{cat.name}</p>
-            <div className="mt-3 divide-y divide-line">
-              {(cat.items ?? []).map((item) => {
+        {categories.map((cat) => {
+          const items = cat.items ?? [];
+          const open = !collapsed.has(cat.id);
+          const catPriced = items.filter((i) => Number(prices[i.id]) > 0).length;
+          const catDone = items.length > 0 && catPriced >= items.length;
+          return (
+          <Card key={cat.id} className="p-0 overflow-hidden">
+            <button type="button" onClick={() => toggleCat(cat.id)} className="flex w-full items-center justify-between gap-3 p-6 text-left">
+              <span className="flex items-center gap-2 font-semibold text-ink">
+                <ChevronDown size={16} className={`text-faint transition-transform ${open ? 'rotate-180' : ''}`} />
+                {cat.name}
+              </span>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${catDone ? 'bg-success-bg text-success' : 'bg-section text-faint'}`}>
+                {catDone ? <span className="inline-flex items-center gap-1"><Check size={12} /> {items.length} priced</span> : `${catPriced}/${items.length} priced`}
+              </span>
+            </button>
+            {open && (
+            <div className="divide-y divide-line px-6 pb-6">
+              {items.map((item) => {
                 const has = Number(prices[item.id]) > 0;
                 const st = statusById[item.id];
                 const locked = st === 'approved';
@@ -235,8 +258,10 @@ export default function PricingPage() {
                 );
               })}
             </div>
+            )}
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {/* sticky save */}

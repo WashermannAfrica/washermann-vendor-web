@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Building2, FileCheck, Tags, CheckCircle2, Clock, XCircle, ChevronRight, Download, GraduationCap, Gamepad2, Sparkles } from 'lucide-react';
+import { Building2, FileCheck, Tags, CheckCircle2, Clock, XCircle, ChevronRight, Download, GraduationCap, Gamepad2, Sparkles, Lock, AlertCircle } from 'lucide-react';
 import { api, apiErrorMessage } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import type { ApiResponse, VendorProfile } from '@/types';
+
+type VendorDoc = { documentType: string };
 
 const STATUS: Record<string, { tone: string; icon: React.ReactNode; title: string; body: string }> = {
   pending_review: { tone: 'bg-warn-bg text-warn', icon: <Clock size={20} />, title: 'Your business is under review', body: 'Complete the steps below to help us verify you faster. You can keep editing while you wait.' },
@@ -15,33 +17,45 @@ const STATUS: Record<string, { tone: string; icon: React.ReactNode; title: strin
   suspended: { tone: 'bg-danger-bg text-danger', icon: <XCircle size={20} />, title: 'Account suspended', body: 'Please contact Washermann support.' },
 };
 
-function StepCard({ href, icon, title, desc, done, progress }: { href: string; icon: React.ReactNode; title: string; desc: string; done?: boolean; progress?: { priced: number; total: number; pct: number } }) {
+function StepCard({ href, icon, title, desc, done, required, statusText, locked, lockedHint, progress }: {
+  href: string; icon: React.ReactNode; title: string; desc: string;
+  done?: boolean; required?: boolean; statusText?: string;
+  locked?: boolean; lockedHint?: string;
+  progress?: { priced: number; total: number; pct: number };
+}) {
   const showProgress = progress && progress.total > 0 && !done;
-  return (
-    <Link href={href}>
-      <Card className="flex items-center gap-4 transition-shadow hover:shadow-md">
-        <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${done ? 'bg-success-bg text-success' : 'bg-mint-soft text-forest'}`}>{icon}</span>
-        <div className="flex-1">
-          <p className="flex items-center gap-2 font-semibold text-ink">{title} {done && <CheckCircle2 size={15} className="text-success" />}</p>
-          {showProgress ? (
-            <div className="mt-1.5">
-              <div className="h-2 w-full max-w-xs rounded-full bg-section">
-                <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${progress!.pct}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-faint">{progress!.priced} of {progress!.total} items priced · {progress!.pct}%{progress!.priced > 0 ? ' — pick up where you left off' : ''}</p>
+  const body = (
+    <Card className={`flex items-center gap-4 transition-shadow ${locked ? 'opacity-60' : 'hover:shadow-md'}`}>
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${locked ? 'bg-section text-faint' : done ? 'bg-success-bg text-success' : 'bg-mint-soft text-forest'}`}>
+        {locked ? <Lock size={18} /> : icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-center gap-2 font-semibold text-ink">
+          {title}
+          {done && <CheckCircle2 size={15} className="text-success" />}
+          {required && !done && !locked && <span className="rounded-full bg-warn-bg px-2 py-0.5 text-[11px] font-medium text-warn">Required</span>}
+        </p>
+        {showProgress ? (
+          <div className="mt-1.5">
+            <div className="h-2 w-full max-w-xs rounded-full bg-section">
+              <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${progress!.pct}%` }} />
             </div>
-          ) : (
-            <p className="text-sm text-body">{desc}</p>
-          )}
-        </div>
-        <ChevronRight size={18} className="text-faint" />
-      </Card>
-    </Link>
+            <p className="mt-1 text-xs text-faint">{progress!.priced} of {progress!.total} items priced · {progress!.pct}%{progress!.priced > 0 ? ' — pick up where you left off' : ''}</p>
+          </div>
+        ) : (
+          <p className="text-sm text-body">{locked ? (lockedHint ?? desc) : (statusText ?? desc)}</p>
+        )}
+      </div>
+      {!locked && <ChevronRight size={18} className="text-faint" />}
+    </Card>
   );
+  if (locked) return <div className="cursor-not-allowed">{body}</div>;
+  return <Link href={href}>{body}</Link>;
 }
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<VendorProfile | null>(null);
+  const [docs, setDocs] = useState<VendorDoc[]>([]);
   const [priced, setPriced] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -52,12 +66,14 @@ export default function DashboardPage() {
       api.get<ApiResponse<VendorProfile>>('/vendors/me/profile'),
       api.get<ApiResponse<{ items?: unknown[] }[]>>('/catalogue').catch(() => ({ data: { data: [] } })),
       api.get<ApiResponse<{ items?: unknown[] } | null>>('/vendors/me/pricing').catch(() => ({ data: { data: null } })),
+      api.get<ApiResponse<VendorDoc[]>>('/vendors/me/documents').catch(() => ({ data: { data: [] } })),
     ])
-      .then(([p, c, pr]) => {
+      .then(([p, c, pr, d]) => {
         setProfile(p.data.data);
         const cats = Array.isArray(c.data.data) ? c.data.data : [];
         setTotalItems(cats.reduce((n, cat) => n + (cat.items?.length ?? 0), 0));
         setPriced((pr.data.data?.items ?? []).length);
+        setDocs(Array.isArray(d.data.data) ? d.data.data : []);
       })
       .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
@@ -67,11 +83,25 @@ export default function DashboardPage() {
   if (error) return <Card className="text-sm text-danger">{error}</Card>;
   if (!profile) return null;
 
-  const s = STATUS[profile.verificationStatus] ?? STATUS.pending_review;
   const profileDone = !!(profile.businessName && profile.phone && profile.areaIds.length);
+
+  // KYC: 4 required sections derived from uploaded document types.
+  const has = (t: string) => docs.some((d) => d.documentType === t);
+  const kycSections = [has('nin') || has('cac'), has('address_proof'), has('personal_photo'), has('shop_photo')];
+  const kycCount = kycSections.filter(Boolean).length;
+  const kycDone = kycCount === 4;
+
+  const requiredDone = profileDone && kycDone;       // submitted everything the review needs
   const pricingDone = totalItems > 0 && priced >= totalItems;
   const pricingPct = totalItems ? Math.round((priced / totalItems) * 100) : 0;
-  const allSet = profile.verificationStatus === 'verified' || (profileDone && pricingDone);
+  const allSet = profile.verificationStatus === 'verified' || (requiredDone && pricingDone);
+
+  // Banner: only call it "under review" once the required info is actually submitted.
+  const vs = profile.verificationStatus;
+  const s = vs === 'pending_review' && !requiredDone
+    ? { tone: 'bg-warn-bg text-warn', icon: <AlertCircle size={20} />, title: 'Action needed — submit your details',
+        body: `You haven't completed verification yet. Submit your business profile and all 4 identity documents (${[profileDone, kycDone].filter(Boolean).length}/2 done) so our team can review you.` }
+    : STATUS[vs] ?? STATUS.pending_review;
 
   return (
     <div className="flex flex-col gap-6">
@@ -108,9 +138,21 @@ export default function DashboardPage() {
         <>
           <p className="text-sm font-semibold text-faint">Complete your onboarding</p>
           <div className="flex flex-col gap-3">
-            <StepCard href="/onboarding/profile" icon={<Building2 size={20} />} title="Business profile" desc="Name, phone and the areas you serve." done={profileDone} />
-            <StepCard href="/onboarding/documents" icon={<FileCheck size={20} />} title="Verification documents" desc="Upload your ID and business documents." />
-            <StepCard href="/onboarding/pricing" icon={<Tags size={20} />} title="Item pricing" desc="Set your price for each laundry item." done={pricingDone} progress={{ priced, total: totalItems, pct: pricingPct }} />
+            <StepCard
+              href="/onboarding/profile" icon={<Building2 size={20} />} title="Business profile"
+              desc="Name, phone and the areas you serve." required done={profileDone}
+            />
+            <StepCard
+              href="/onboarding/documents" icon={<FileCheck size={20} />} title="Identity & verification"
+              desc="National ID, proof of address, your photo and shop photos." required done={kycDone}
+              statusText={kycDone ? 'All documents submitted ✓' : `${kycCount} of 4 submitted · ${4 - kycCount} left`}
+            />
+            <StepCard
+              href="/onboarding/pricing" icon={<Tags size={20} />} title="Item pricing"
+              desc="Set your price for each laundry item." done={pricingDone}
+              locked={!requiredDone} lockedHint="Submit your profile & verification documents first to unlock pricing."
+              progress={requiredDone ? { priced, total: totalItems, pct: pricingPct } : undefined}
+            />
           </div>
         </>
       )}
