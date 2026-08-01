@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
@@ -8,16 +8,15 @@ import { useAuthStore } from '@/store/auth.store';
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const [ready, setReady] = useState(false);
 
-  useEffect(() => setReady(true), []);
   useEffect(() => {
-    if (ready && !isAuthenticated) router.replace('/login');
-  }, [ready, isAuthenticated, router]);
+    if (hasHydrated && !isAuthenticated) router.replace('/login');
+  }, [hasHydrated, isAuthenticated, router]);
 
-  if (!ready || !isAuthenticated) return null;
+  if (!hasHydrated || !isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-page">
