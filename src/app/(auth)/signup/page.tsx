@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff, Mail, User, Gift } from 'lucide-react';
+import { Eye, EyeOff, Mail, User, Gift, Phone } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '@/store/auth.store';
 import { BASE_URL, apiErrorMessage } from '@/lib/api';
@@ -28,7 +28,7 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const { login } = useAuthStore();
 
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', referralCode: searchParams.get('ref') ?? '' });
+  const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', referralCode: searchParams.get('ref') ?? '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,11 +42,16 @@ function SignupForm() {
       setError('Password must be at least 8 characters.');
       return;
     }
+    if (!/^\+?[0-9]{10,15}$/.test(form.phone.trim())) {
+      setError('Please enter a valid phone number.');
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await axios.post<RegisterResponse>(`${BASE_URL}/auth/vendor/register`, {
         fullName: form.fullName.trim(),
         email: form.email.trim(),
+        phone: form.phone.trim(),
         password: form.password,
         referralCode: form.referralCode.trim() || undefined,
       });
@@ -71,6 +76,7 @@ function SignupForm() {
       <form onSubmit={handleSubmit} className="mt-12 space-y-5">
         <Input label="Full name" required placeholder="e.g. Emeka Okafor" leftIcon={<User size={16} />} value={form.fullName} onChange={set('fullName')} />
         <Input label="Business email" required type="email" placeholder="you@business.com" leftIcon={<Mail size={16} />} value={form.email} onChange={set('email')} autoComplete="email" />
+        <Input label="Phone number" required type="tel" inputMode="tel" placeholder="+2348012345678" leftIcon={<Phone size={16} />} value={form.phone} onChange={set('phone')} autoComplete="tel" />
         <Input
           label="Password" required type={showPassword ? 'text' : 'password'} placeholder="At least 8 characters"
           value={form.password} onChange={set('password')} autoComplete="new-password"
