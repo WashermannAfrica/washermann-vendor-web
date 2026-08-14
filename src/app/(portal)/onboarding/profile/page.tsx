@@ -46,11 +46,17 @@ export default function ProfilePage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    // Phone is mandatory — enforce it here so vendors created before phone was
+    // required (phone = null) must add a valid one before they can submit.
+    if (!/^\+?[0-9]{10,15}$/.test(phone.trim())) {
+      setError('A valid phone number is required.');
+      return;
+    }
     setSaving(true);
     try {
       await api.patch('/vendors/me/profile', {
         businessName: businessName.trim() || undefined,
-        phone: phone.trim() || undefined,
+        phone: phone.trim(),
         areaIds,
       });
       setSaved(true);
