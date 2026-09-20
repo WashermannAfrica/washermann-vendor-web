@@ -9,6 +9,7 @@ import { BASE_URL, apiErrorMessage } from '@/lib/api';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { AuthBody, AuthHeading } from '@/components/ui/AuthShell';
+import { policyUrl } from '@/lib/policies';
 import type { ApiResponse } from '@/types';
 
 interface RegisterResponse {
@@ -30,6 +31,7 @@ function SignupForm() {
 
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', referralCode: searchParams.get('ref') ?? '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,6 +46,10 @@ function SignupForm() {
     }
     if (!/^\+?[0-9]{10,15}$/.test(form.phone.trim())) {
       setError('Please enter a valid phone number.');
+      return;
+    }
+    if (!agreed) {
+      setError('Please agree to the Vendor Agreement, Terms and Privacy Policy to continue.');
       return;
     }
     setLoading(true);
@@ -84,9 +90,24 @@ function SignupForm() {
         />
         <Input label="Referral code (optional)" placeholder="WM-XXXXXX" leftIcon={<Gift size={16} />} value={form.referralCode} onChange={set('referralCode')} />
 
+        <label className="flex items-start gap-2.5 text-xs leading-relaxed text-body">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-line"
+          />
+          <span>
+            I agree to Washermann&apos;s{' '}
+            <a href={policyUrl('vendor-agreement')} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Vendor Agreement</a>,{' '}
+            <a href={policyUrl('terms-of-service')} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Terms of Service</a>, and{' '}
+            <a href={policyUrl('privacy-policy')} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">Privacy Policy</a>.
+          </span>
+        </label>
+
         {error && <p className="text-sm text-danger">{error}</p>}
 
-        <Button type="submit" size="lg" loading={loading} className="w-full">Create account</Button>
+        <Button type="submit" size="lg" loading={loading} disabled={!agreed} className="w-full">Create account</Button>
       </form>
 
       <p className="mt-8 text-center text-sm text-body">
