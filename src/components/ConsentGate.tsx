@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ExternalLink, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-
-const LANDING = process.env.NEXT_PUBLIC_LANDING_URL ?? 'https://washermann.com';
+import { policyUrl } from '@/lib/policies';
 
 interface PendingPolicy {
   key: string;
@@ -86,7 +85,7 @@ export default function ConsentGate() {
                 </span>
               </span>
               <a
-                href={`${LANDING}/legal/${p.key}`}
+                href={policyUrl(p.key)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
