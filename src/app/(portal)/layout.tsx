@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
+import ConsentGate from '@/components/ConsentGate';
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -36,6 +37,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-5 py-8">{children}</main>
+      <ConsentGate />
     </div>
   );
 }
