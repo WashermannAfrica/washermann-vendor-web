@@ -125,15 +125,18 @@ export default function DashboardPage() {
       </div>
 
       {profile.verificationStatus === 'verified' ? (
-        <Card className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-ink">Get the app</p>
-            <p className="text-sm text-body">Manage orders and go online from your phone.</p>
-          </div>
-          <a href="https://www.washermann.com" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark">
-            <Download size={16} /> Download
-          </a>
-        </Card>
+        <>
+        </>
+        // <Card className="flex items-center justify-between">
+        //   <div>
+        //     {/* <p className="font-semibold text-ink">Get the app</p> */}
+        //     <p className="font-semibold text-ink">App is coming soon</p>
+        //     <p className="text-sm text-body">Manage orders and go online from your phone.</p>
+        //   </div>
+        //   {/* <a href="https://www.washermann.com" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark">
+        //     <Download size={16} /> Download
+        //   </a> */}
+        // </Card>
       ) : (
         <>
           <p className="text-sm font-semibold text-faint">Complete your onboarding</p>
