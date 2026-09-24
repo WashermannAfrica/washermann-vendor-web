@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Building2, FileCheck, Tags, CheckCircle2, Clock, XCircle, ChevronRight, Download, GraduationCap, Gamepad2, Sparkles, Lock, AlertCircle } from 'lucide-react';
+import { Building2, FileCheck, Tags, CheckCircle2, Clock, XCircle, ChevronRight, Download, GraduationCap, Gamepad2, Sparkles, Lock, AlertCircle, Gift } from 'lucide-react';
 import { api, apiErrorMessage } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
@@ -125,15 +125,18 @@ export default function DashboardPage() {
       </div>
 
       {profile.verificationStatus === 'verified' ? (
-        <Card className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-ink">Get the app</p>
-            <p className="text-sm text-body">Manage orders and go online from your phone.</p>
-          </div>
-          <a href="https://www.washermann.com" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark">
-            <Download size={16} /> Download
-          </a>
-        </Card>
+        <>
+        </>
+        // <Card className="flex items-center justify-between">
+        //   <div>
+        //     {/* <p className="font-semibold text-ink">Get the app</p> */}
+        //     <p className="font-semibold text-ink">App is coming soon</p>
+        //     <p className="text-sm text-body">Manage orders and go online from your phone.</p>
+        //   </div>
+        //   {/* <a href="https://www.washermann.com" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark">
+        //     <Download size={16} /> Download
+        //   </a> */}
+        // </Card>
       ) : (
         <>
           <p className="text-sm font-semibold text-faint">Complete your onboarding</p>
@@ -156,6 +159,18 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+
+      {/* Refer & earn — available to every vendor */}
+      <Link href="/refer">
+        <Card className="group flex items-center gap-4 transition-shadow hover:shadow-md">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-forest text-white"><Gift size={20} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-ink">Refer &amp; earn</p>
+            <p className="text-sm text-body">Invite other washermen and earn WashPoints when they’re approved.</p>
+          </div>
+          <ChevronRight size={18} className="text-faint transition-transform group-hover:translate-x-0.5" />
+        </Card>
+      </Link>
 
       {/* Engagement — tutorial + game, unlocked once the vendor is set up */}
       {allSet && (
