@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { MapPin, Search, Check, X } from 'lucide-react';
-import { geocodeAddress, MAPBOX_ENABLED, type GeocodeHit } from '@/lib/mapbox';
+import {
+  placeAutocomplete,
+  placeDetails,
+  newSessionToken,
+  type PlaceSuggestion,
+} from '@/lib/places';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
 
@@ -24,37 +29,45 @@ interface AddressSearchProps {
 }
 
 /**
- * Address → coordinates picker. The vendor searches, picks a real place, and we
- * capture its latitude/longitude (required by the backend). Editing the text
- * after a pick clears the captured point so a stale coordinate can't be sent.
+ * Address → coordinates picker backed by Google Places (via the backend proxy).
+ * The vendor searches, picks a real place, and we resolve its latitude/longitude
+ * (required by the backend). Editing the text after a pick clears the captured
+ * point so a stale coordinate can't be sent.
  */
 export function AddressSearch({ label, required, value, onChange, proximity, error, id }: AddressSearchProps) {
   const inputId = id ?? 'address-search';
   const [query, setQuery] = useState(value?.address ?? '');
-  const [hits, setHits] = useState<GeocodeHit[]>([]);
+  const [hits, setHits] = useState<PlaceSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const [lookupError, setLookupError] = useState('');
   const [noHits, setNoHits] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  // One Places session token per "start typing → pick" cycle (billing).
+  const sessionRef = useRef('');
 
   const selected = value != null && value.address === query;
 
   // Debounced search; aborts the in-flight request when the query changes.
   useEffect(() => {
-    if (!MAPBOX_ENABLED) return;
     const q = query.trim();
     if (selected || q.length < 3) {
       setHits([]);
       setNoHits(false);
       return;
     }
+    if (!sessionRef.current) sessionRef.current = newSessionToken();
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       setSearching(true);
       setLookupError('');
       try {
-        const found = await geocodeAddress(q, { proximity, signal: ctrl.signal });
+        const found = await placeAutocomplete(q, {
+          sessionToken: sessionRef.current,
+          proximity,
+          signal: ctrl.signal,
+        });
         setHits(found);
         setNoHits(found.length === 0);
         setOpen(true);
@@ -82,12 +95,24 @@ export function AddressSearch({ label, required, value, onChange, proximity, err
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
-  function pick(h: GeocodeHit) {
-    setQuery(h.placeName);
-    onChange({ address: h.placeName, latitude: h.latitude, longitude: h.longitude });
-    setHits([]);
+  async function pick(h: PlaceSuggestion) {
     setOpen(false);
+    setHits([]);
     setNoHits(false);
+    setQuery(h.placeName);
+    setResolving(true);
+    setLookupError('');
+    try {
+      const loc = await placeDetails(h.placeId, sessionRef.current);
+      onChange({ address: loc.placeName, latitude: loc.latitude, longitude: loc.longitude });
+      setQuery(loc.placeName);
+    } catch (err) {
+      setLookupError((err as Error).message || 'Could not load that address.');
+      onChange(null);
+    } finally {
+      sessionRef.current = ''; // close the billable session; next search starts a new one
+      setResolving(false);
+    }
   }
 
   function onType(v: string) {
@@ -100,20 +125,7 @@ export function AddressSearch({ label, required, value, onChange, proximity, err
     onChange(null);
     setHits([]);
     setNoHits(false);
-  }
-
-  if (!MAPBOX_ENABLED) {
-    return (
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-ink">
-          {label} {required && <span className="text-danger">*</span>}
-        </label>
-        <div className="rounded-2xl bg-warn-bg px-4 py-3 text-sm text-warn">
-          Address search is unavailable: <code>NEXT_PUBLIC_MAPBOX_TOKEN</code> isn’t set for this
-          portal. Add it to the environment to capture pickup/delivery coordinates.
-        </div>
-      </div>
-    );
+    sessionRef.current = '';
   }
 
   return (
@@ -140,7 +152,7 @@ export function AddressSearch({ label, required, value, onChange, proximity, err
             selected && 'ring-2 ring-primary/40',
           )}
         />
-        {searching ? (
+        {searching || resolving ? (
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-primary"><Spinner size="sm" /></span>
         ) : query ? (
           <button
@@ -157,7 +169,7 @@ export function AddressSearch({ label, required, value, onChange, proximity, err
           <div className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-line bg-white p-1.5 shadow-lg">
             {hits.map((h) => (
               <button
-                key={h.id}
+                key={h.placeId}
                 type="button"
                 onClick={() => pick(h)}
                 className="flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left hover:bg-section"
