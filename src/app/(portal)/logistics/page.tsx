@@ -76,12 +76,21 @@ export default function LogisticsBookingPage() {
   const verified = profile.verificationStatus === 'verified';
   const hasLocation = profile.latitude != null && profile.longitude != null;
 
-  if (!verified) return <NotVerified />;
+  // A shop location is the ONE hard requirement — it anchors pricing and routing.
+  // Verification (and pricing) are non-blocking onboarding tasks: an unverified
+  // vendor can already book (the API allows own-bookings without verification);
+  // we surface the pending tasks as a banner rather than a gate.
   if (!hasLocation) {
     return <SetShopLocation onSaved={(lat, lng) => setProfile({ ...profile, latitude: lat, longitude: lng })} />;
   }
 
-  return <BookingForm profile={profile} onBookings={() => router.push('/logistics/bookings')} />;
+  return (
+    <BookingForm
+      profile={profile}
+      verified={verified}
+      onBookings={() => router.push('/logistics/bookings')}
+    />
+  );
 }
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -94,28 +103,23 @@ function BackLink() {
   );
 }
 
-function NotVerified() {
+/** Non-blocking reminder shown above the booking form while a vendor is unverified. */
+function VerificationPendingBanner() {
   return (
-    <div className="mx-auto max-w-xl">
-      <BackLink />
-      <h1 className="text-2xl font-bold tracking-tight text-ink">Book a pickup or delivery</h1>
-      <Card className="mt-6">
-        <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-warn-bg text-warn">
-            <AlertCircle size={20} />
-          </span>
-          <div>
-            <p className="font-semibold text-ink">Verification required</p>
-            <p className="mt-1 text-sm text-body">
-              Logistics bookings are available once your business is verified. Finish your onboarding
-              and our team will review you.
-            </p>
-            <Link href="/dashboard" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-forest">
-              Go to onboarding <ArrowRight size={15} />
-            </Link>
-          </div>
-        </div>
-      </Card>
+    <div className="mt-4 flex items-start gap-3 rounded-2xl bg-warn-bg/60 px-4 py-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warn-bg text-warn">
+        <AlertCircle size={18} />
+      </span>
+      <div className="text-sm">
+        <p className="font-semibold text-ink">You can book now — finish setup when you can</p>
+        <p className="mt-0.5 text-body">
+          Your business is still being verified. Bookings work today; verification unlocks payouts,
+          receiving customer orders and your own pricing.
+        </p>
+        <Link href="/dashboard" className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-forest">
+          Finish onboarding <ArrowRight size={14} />
+        </Link>
+      </div>
     </div>
   );
 }
@@ -172,7 +176,7 @@ interface FormErrors {
   recipientAddress?: string;
 }
 
-function BookingForm({ profile, onBookings }: { profile: VendorProfileFull; onBookings: () => void }) {
+function BookingForm({ profile, verified, onBookings }: { profile: VendorProfileFull; verified: boolean; onBookings: () => void }) {
   const [choice, setChoice] = useState<BookingChoice | ''>('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -275,6 +279,8 @@ function BookingForm({ profile, onBookings }: { profile: VendorProfileFull; onBo
         Request a Washermann rep to move laundry between you and your customer. We handle the
         movement and price it automatically.
       </p>
+
+      {!verified && <VerificationPendingBanner />}
 
       <form onSubmit={submit} noValidate className="mt-6 space-y-5">
         {/* A. Service */}

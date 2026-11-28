@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Building2, FileCheck, Tags, CheckCircle2, Clock, XCircle, ChevronRight, Download, GraduationCap, Gamepad2, Sparkles, Lock, AlertCircle, Gift, Truck, ClipboardList } from 'lucide-react';
+import { Building2, FileCheck, Tags, CheckCircle2, Clock, XCircle, ChevronRight, GraduationCap, Gamepad2, Sparkles, Lock, AlertCircle, Gift, Truck, ClipboardList } from 'lucide-react';
 import { api, apiErrorMessage } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
+import InstallCard from '@/components/pwa/InstallCard';
 import type { ApiResponse, VendorProfile } from '@/types';
 
 type VendorDoc = { documentType: string };
@@ -124,46 +125,40 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {profile.verificationStatus === 'verified' ? (
-        <div>
-          <p className="mb-3 text-sm font-semibold text-faint">Logistics</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Link href="/logistics">
-              <Card className="group flex h-full items-center gap-4 transition-shadow hover:shadow-md">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-white"><Truck size={20} /></span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-ink">Book a pickup or delivery</p>
-                  <p className="text-sm text-body">Request a rep to move laundry to or from your customer.</p>
-                </div>
-                <ChevronRight size={18} className="text-faint transition-transform group-hover:translate-x-0.5" />
-              </Card>
-            </Link>
-            <Link href="/logistics/bookings">
-              <Card className="group flex h-full items-center gap-4 transition-shadow hover:shadow-md">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-mint-soft text-forest"><ClipboardList size={20} /></span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-ink">My bookings</p>
-                  <p className="text-sm text-body">Track status and settle fees for your pickups and deliveries.</p>
-                </div>
-                <ChevronRight size={18} className="text-faint transition-transform group-hover:translate-x-0.5" />
-              </Card>
-            </Link>
-          </div>
+      <InstallCard />
+
+      {/* Logistics — available to every vendor. The booking page requires a shop
+          location (set once); verification/pricing are non-blocking tasks. */}
+      <div>
+        <p className="mb-3 text-sm font-semibold text-faint">Logistics</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link href="/logistics">
+            <Card className="group flex h-full items-center gap-4 transition-shadow hover:shadow-md">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-white"><Truck size={20} /></span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-ink">Book a pickup or delivery</p>
+                <p className="text-sm text-body">Request a rep to move laundry to or from your customer.</p>
+              </div>
+              <ChevronRight size={18} className="text-faint transition-transform group-hover:translate-x-0.5" />
+            </Card>
+          </Link>
+          <Link href="/logistics/bookings">
+            <Card className="group flex h-full items-center gap-4 transition-shadow hover:shadow-md">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-mint-soft text-forest"><ClipboardList size={20} /></span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-ink">My bookings</p>
+                <p className="text-sm text-body">Track status and settle fees for your pickups and deliveries.</p>
+              </div>
+              <ChevronRight size={18} className="text-faint transition-transform group-hover:translate-x-0.5" />
+            </Card>
+          </Link>
         </div>
-        // <Card className="flex items-center justify-between">
-        //   <div>
-        //     {/* <p className="font-semibold text-ink">Get the app</p> */}
-        //     <p className="font-semibold text-ink">App is coming soon</p>
-        //     <p className="text-sm text-body">Manage orders and go online from your phone.</p>
-        //   </div>
-        //   {/* <a href="https://www.washermann.com" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark">
-        //     <Download size={16} /> Download
-        //   </a> */}
-        // </Card>
-      ) : (
-        <>
+      </div>
+
+      {profile.verificationStatus !== 'verified' && (
+        <div>
           <p className="text-sm font-semibold text-faint">Complete your onboarding</p>
-          <div className="flex flex-col gap-3">
+          <div className="mt-3 flex flex-col gap-3">
             <StepCard
               href="/onboarding/profile" icon={<Building2 size={20} />} title="Business profile"
               desc="Name, phone and the areas you serve." required done={profileDone}
@@ -180,7 +175,7 @@ export default function DashboardPage() {
               progress={requiredDone ? { priced, total: totalItems, pct: pricingPct } : undefined}
             />
           </div>
-        </>
+        </div>
       )}
 
       {/* Refer & earn — available to every vendor */}
