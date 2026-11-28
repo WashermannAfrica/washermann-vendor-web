@@ -6,6 +6,7 @@ import { Building2, FileCheck, Tags, CheckCircle2, Clock, XCircle, ChevronRight,
 import { api, apiErrorMessage } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
+import InstallCard from '@/components/pwa/InstallCard';
 import type { ApiResponse, VendorProfile } from '@/types';
 
 type VendorDoc = { documentType: string };
@@ -123,6 +124,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <InstallCard />
 
       {/* Logistics — available to every vendor. The booking page requires a shop
           location (set once); verification/pricing are non-blocking tasks. */}
